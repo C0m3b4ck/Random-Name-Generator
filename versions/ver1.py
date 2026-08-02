@@ -1,6 +1,8 @@
 import os
 import random
 
+MAX_NAMES_PER_PERSON = 5
+
 def get_file_path(filename):
     if os.path.isfile(filename):
         print(f"Found {filename} in current directory.")
@@ -15,14 +17,23 @@ def get_file_path(filename):
 
 def load_names(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
-        return [line.strip() for line in f if line.strip()]
+        names = [line.strip() for line in f if line.strip()]
+    if not names:
+        raise ValueError(
+            f"'{filepath}' contains no names. Add at least one name per line."
+        )
+    return names
 
 def main():
     surname_file = get_file_path("surname.txt")
     name_file = get_file_path("name.txt")
 
-    surnames = load_names(surname_file)
-    names = load_names(name_file)
+    try:
+        surnames = load_names(surname_file)
+        names = load_names(name_file)
+    except ValueError as e:
+        print(e)
+        return
 
     # Input validation for number of names, surnames, and people
     while True:
@@ -37,8 +48,17 @@ def main():
         except ValueError:
             print("Invalid input. Please enter integers.")
 
+    if num_names_per_person > MAX_NAMES_PER_PERSON:
+        print(f"Names per person capped at {MAX_NAMES_PER_PERSON}.")
+        num_names_per_person = MAX_NAMES_PER_PERSON
+
+    output_filename = ""
+    if input("Write results to a file? [y/n]: ").strip().lower() in ("y", "yes"):
+        output_filename = input("Output filename (default generated_names.txt): ").strip() or "generated_names.txt"
+
     print("\nGenerated random people:\n")
 
+    generated = []
     for _ in range(num_people):
         # Sample without replacement if list is long enough, else with replacement
         chosen_names = random.sample(names, k=num_names_per_person) if len(names) >= num_names_per_person else [random.choice(names) for _ in range(num_names_per_person)]
@@ -46,6 +66,13 @@ def main():
 
         full_name = " ".join(chosen_names + chosen_surnames)
         print(full_name)
+        if output_filename:
+            generated.append(full_name)
+
+    if output_filename:
+        with open(output_filename, "w", encoding="utf-8") as f:
+            f.write("\n".join(generated) + "\n")
+        print(f"\nResults written to {output_filename}.")
 
 if __name__ == "__main__":
     main()
